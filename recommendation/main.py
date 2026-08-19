@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import joblib
 import pandas as pd
@@ -33,6 +33,14 @@ class InsuranceRequest(BaseModel):
     risk_grade: str
     cross_coverage: str
     disease_history: str
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    if request.url.path == "/recommend/securities":
+        body = await request.body()
+        print("실제 도착한 body: ", body)
+    response = await call_next(request)
+    return response
 
 @app.get("/")
 def health_check():
