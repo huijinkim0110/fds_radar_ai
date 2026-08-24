@@ -5,7 +5,7 @@ from services.intent_router import route_message
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-SPRING_BASE_URL = "httpx://localhost:9090"
+SPRING_BASE_URL = "http://localhost:9090"
 
 class ChatRequest(BaseModel):
     userId: int
