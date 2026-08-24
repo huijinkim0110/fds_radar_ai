@@ -1,8 +1,11 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+import httpx
 from services.intent_router import route_message
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+SPRING_BASE_URL = "httpx://localhost:9090"
 
 class ChatRequest(BaseModel):
     userId: int
@@ -13,7 +16,20 @@ class ChatResponse(BaseModel):
     reply: str
     needsAdmin: bool # true면 프론트가 상담원 연결(WebSocket 전환) 처리
 
+async def save_message(session_id: int, sender_type: str, sender_id: int | None, content: str):
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            f"{SPRING_BASE_URL}/chat/sessions/{session_id}/messages",
+            json={"senderType": sender_type, "senderId": sender_id, "content": content},
+        )
+
 @router.post("", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    result = await route_message(request.userId, request.message)
+    # route_message 안에서 get_recent_history가 "이번 메시지 저장 전" 이력을 조회하므로
+    # 저장은 반드시 분류/응답 생성 이후에 함
+    result = await route_message(request.userId, request.sessionId, request.message)
+
+    await save_message(request.sessionId, "USER", request.userId, request.message)
+    await save_message(request.sessionId, "BOT", None, result["reply"])
+
     return ChatResponse(reply=result["reply"], needsAdmin=result["needsAdmin"])

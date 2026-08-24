@@ -18,7 +18,10 @@ CATEGORIES = [
 
 NOT_YET_IMPLEMENTED = {"AUTH", "ACCOUNT_CARD", "TRANSFER", "FRAUD", "NOTIFICATION", "OTHER"}
 
-CLASSIFY_PROMPT_TEMPLATE = """다음 사용자 메시지를 아래 카테고리 중 하나로만 분류해줘.
+CLASSIFY_PROMPT_TEMPLATE = """다음은 사용자와 챗봇의 최근 대화 내역이야.
+마지막 사용자 메시지를 아래 카테고리 중 하나로만 분류해줘.
+마지막 메시지가 새로운 주제가 아니라 바로 직전 봇 답변에 대한 되묻기, 확인, 거부감 표현 같은 후속 질문이면
+새 카테고리로 분류하지 말고 직전에 다루던 주제의 카테고리로 분류해.
 다른 설명 없이 카테고리명만 정확히 출력해.
 
 카테고리:
@@ -33,13 +36,17 @@ CLASSIFY_PROMPT_TEMPLATE = """다음 사용자 메시지를 아래 카테고리 
 - NOTIFICATION: 알림 확인 관련
 - OTHER: 위 어디에도 해당하지 않는 요청
 
-사용자 메시지: "{message}"
+최근 대화:
+{history}
+
+마지막 사용자 메시지: "{message}"
 
 카테고리:"""
 
 
-async def route_message(user_id: int, message: str) -> dict:
-    category = classify(message)
+async def route_message(user_id: int, session_id: int, message: str) -> dict:
+    history = await get_recent_history(session_id)
+    category = classify(message, history)
 
     if category in NOT_YET_IMPLEMENTED:
         return {"reply": "죄송해요, 아직 지원하지 않는 문의예요. 상담원을 연결해드릴게요.", "needsAdmin": True}
@@ -63,8 +70,11 @@ async def route_message(user_id: int, message: str) -> dict:
     return {"reply": "죄송해요, 아직 지원하지 않는 문의예요. 상담원을 연결해드릴게요.", "needsAdmin": True}
 
 
-def classify(message: str) -> str:
-    prompt = CLASSIFY_PROMPT_TEMPLATE.format(message=message)
+def classify(message: str, history: list[dict]) -> str:
+    history_text = "\n".join(
+        f"{h.get('senderType')}: {h.get('content')}" for h in history
+    ) or "(이전 대화 없음)"
+    prompt = CLASSIFY_PROMPT_TEMPLATE.format(history=history_text, message=message)
     result = ask_gemini(prompt).strip()
 
     if result not in CATEGORIES:
@@ -106,3 +116,11 @@ async def handle_goal(user_id: int) -> str:
         return "설정된 재무목표가 없어요. 새로 등록해보시겠어요?"
 
     return f"현재 {len(goals)}개의 재무목표가 진행 중이에요."
+
+async def get_recent_history(session_id: int, limit: int = 6) -> list[dict]:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{SPRING_BASE_URL}/chat/sessions/{session_id}")
+        data = response.json()
+
+    messages = data.get("messages", [])
+    return messages[-limit:]
