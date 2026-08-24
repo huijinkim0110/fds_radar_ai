@@ -75,8 +75,9 @@ def classify(message: str) -> str:
 
 async def handle_product_inquiry(user_id: int, message: str) -> str:
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{SPRING_BASE_URL}/financial-products")
-        products = response.json()
+        response = await client.get(f"{SPRING_BASE_URL}/products")
+        page = response.json()
+        products = page.get("content", [])
 
     if not products:
         return "조건에 맞는 상품을 찾지 못했어요."
