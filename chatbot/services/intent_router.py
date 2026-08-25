@@ -1,7 +1,7 @@
 from services.prompts import NOT_YET_IMPLEMENTED
-from services.classifier import classify, generate_followup_reply
+from services.classifier import classify, generate_followup_reply, generate_policy_answer
 from services.handlers import handle_product_inquiry, handle_recommendation, handle_diagnosis, handle_goal
-from services.messages import PENDING_CONTEXTS
+from services.messages import PENDING_CONTEXTS, POLICY_FACTS
 from services.session_state import get_session_state, clear_pending_context
 
 
@@ -15,10 +15,18 @@ async def route_message(user_id: int, session_id: int, message: str) -> dict:
         nav = entry.get("nav")
         return {"reply": reply, "needsAdmin": False, "navActions": [nav] if nav else []}
 
-    category = await classify(message, history)
+    category, req_type = await classify(message, history)
 
     if category in NOT_YET_IMPLEMENTED:
         return {"reply": "죄송해요, 아직 지원하지 않는 문의예요. 상담원을 연결해드릴게요.", "needsAdmin": True, "navActions": []}
+
+    if req_type == "QUESTION":
+        policy_key = "DIAGNOSIS" if category.startswith("DIAGNOSIS_") else category
+        policy_fact = POLICY_FACTS.get(policy_key)
+        if policy_fact:
+            reply = await generate_policy_answer(policy_fact, message, history)
+            return {"reply": reply, "needsAdmin": False, "navActions": []}
+        # 정책 사실이 정의 안 된 카테고리는 QUESTION이어도 기존 REQUEST 흐름으로 폴백
 
     if category == "PRODUCT_INQUIRY":
         result = await handle_product_inquiry(session_id, message)

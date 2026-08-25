@@ -3,6 +3,15 @@ DIAGNOSIS_REQUIRED_MESSAGE = "추천을 받으려면 먼저 투자성향 진단�
 NO_GOALS_MESSAGE = "설정된 재무목표가 없어요. 새로 등록해보시겠어요?"
 DIAGNOSIS_RESULT_UNAVAILABLE_MESSAGE = "아직 진단 이력이 없어요. 먼저 진단을 받아보시겠어요?"
 
+
+# QUESTION 유형 응답 생성 시 근거로 쓰는 정책 사실 (카테고리 기준, DIAGNOSIS_*는 모두 "DIAGNOSIS" 키 공유)
+POLICY_FACTS = {
+    "PRODUCT_INQUIRY": "금융상품 조회는 로그인 여부와 상관없이 누구나 이용할 수 있어.",
+    "RECOMMENDATION": "상품 추천을 받으려면 반드시 투자성향 진단을 먼저 받아야 해. 진단 없이는 추천을 받을 수 없어.",
+    "DIAGNOSIS": "투자성향 진단은 몇 가지 질문에 답하면 완료되고, 원하면 언제든 다시 받을 수 있어.",
+    "GOAL": "재무목표는 개수 제한 없이 자유롭게 등록, 수정, 취소할 수 있어.",
+}
+
 PENDING_CONTEXTS = {
     "NO_PRODUCTS": {
         "message": NO_PRODUCTS_MESSAGE,

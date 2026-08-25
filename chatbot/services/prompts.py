@@ -16,8 +16,13 @@ CATEGORIES = [
 NOT_YET_IMPLEMENTED = {"AUTH", "ACCOUNT_CARD", "TRANSFER", "FRAUD", "NOTIFICATION", "OTHER"}
 
 CLASSIFY_PROMPT_TEMPLATE = """다음은 사용자와 챗봇의 최근 대화 내역이야.
-마지막 사용자 메시지를 아래 카테고리 중 하나로만 분류해줘.
-다른 설명 없이 카테고리명만 정확히 출력해.
+마지막 사용자 메시지를 아래 카테고리 중 하나로 분류하고, 요청 유형도 함께 판단해줘.
+
+요청 유형:
+- REQUEST: 지금 그 행동을 실제로 하고 싶어하는 경우 (예: "추천해줘", "상품 보여줘")
+- QUESTION: 조건, 정책, 가능 여부를 묻는 경우 (예: "진단 없어도 추천받을 수 있어?", "몇 개까지 등록 가능해?")
+
+다른 설명 없이 "카테고리명|유형" 형식으로만 출력해. 예: RECOMMENDATION|QUESTION
 
 카테고리:
 - PRODUCT_INQUIRY: 금융상품 조회, 비교, 검색 관련
@@ -38,7 +43,23 @@ CLASSIFY_PROMPT_TEMPLATE = """다음은 사용자와 챗봇의 최근 대화 내
 
 마지막 사용자 메시지: "{message}"
 
-카테고리:"""
+카테고리|유형:"""
+
+POLICY_QUESTION_PROMPT_TEMPLATE = """너는 금융 서비스 챗봇이야. 사용자가 아래 사실에 대한 조건이나 가능 여부를 묻고 있어.
+
+참고할 사실: {policy_fact}
+
+규칙:
+- 위 사실과 다른 내용을 답하면 안 돼
+- 존댓말 사용, 200자 이내, 과장되거나 장황한 설명 금지
+- 다른 설명 없이 답변 문장만 출력해
+
+최근 대화:
+{history}
+
+사용자 메시지: "{message}"
+
+답변:"""
 
 FOLLOWUP_PROMPT_TEMPLATE = """너는 금융 서비스 챗봇이야. {context}
 
