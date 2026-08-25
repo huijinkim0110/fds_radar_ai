@@ -15,8 +15,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     needsAdmin: bool # true면 프론트가 상담원 연결(WebSocket 전환) 처리
-    navPath: str | None = None
-    navLabel: str | None = None
+    navActions: list[dict] = []
 
 async def save_message(session_id: int, sender_type: str, sender_id: int | None, content: str):
     async with httpx.AsyncClient() as client:
@@ -38,6 +37,5 @@ async def chat(request: ChatRequest, background_tasks: BackgroundTasks):
     return ChatResponse(
         reply=result["reply"], 
         needsAdmin=result["needsAdmin"],
-        navPath=result.get("navPath"),
-        navLabel=result.get("navLabel"),
+        navActions=result.get("navActions", []),
     )
