@@ -5,6 +5,14 @@ from services.messages import (
     DIAGNOSIS_REQUIRED_MESSAGE,
     NO_GOALS_MESSAGE,
     DIAGNOSIS_RESULT_UNAVAILABLE_MESSAGE,
+    MY_PROFILE_MESSAGE,
+    ACCOUNT_LIST_MESSAGE,
+    ACCOUNT_NEW_MESSAGE,
+    CARD_LIST_MESSAGE,
+    CARD_NEW_MESSAGE,
+    FRAUD_REPORT_NEW_MESSAGE,
+    LOCK_REQUEST_NEW_MESSAGE,
+    CUSTOMER_CENTER_PAGE_MESSAGE,
 )
 from services.session_state import set_pending_context
 
@@ -91,3 +99,95 @@ async def handle_goal(session_id: int, user_id: int) -> dict:
         "reply": f"현재 {len(goals)}개의 재무목표가 진행 중이에요.",
         "navActions": [{"path": "/mypage/financial-goals", "label": "재무목표 보기"}],
     }
+
+
+async def handle_my_profile() -> dict:
+    return {"reply": MY_PROFILE_MESSAGE, "navActions": [{"path": "/mypage/profile", "label": "회원정보 보기"}]}
+
+
+async def handle_account(intent: str) -> dict:
+    """intent: 'LIST' | 'NEW' | 'AMBIGUOUS'"""
+    if intent == "NEW":
+        return {"reply": ACCOUNT_NEW_MESSAGE, "navActions": [{"path": "/mypage/accounts", "label": "계좌 개설하러 가기"}]}
+
+    if intent == "AMBIGUOUS":
+        return {
+            "reply": "계좌를 조회하시겠어요, 아니면 새로 개설하시겠어요?",
+            "navActions": [
+                {"path": "/mypage/accounts", "label": "내 계좌 보기"},
+                {"path": "/mypage/accounts", "label": "계좌 개설하러 가기"},
+            ],
+        }
+
+    # intent == "LIST"(기본값)
+    return {"reply": ACCOUNT_LIST_MESSAGE, "navActions": [{"path": "/mypage/accounts", "label": "내 계좌 보기"}]}
+
+
+async def handle_card(intent: str) -> dict:
+    """intent: 'LIST' | 'NEW' | 'AMBIGUOUS'"""
+    if intent == "NEW":
+        return {"reply": CARD_NEW_MESSAGE, "navActions": [{"path": "/mypage/cards", "label": "카드 발급하러 가기"}]}
+
+    if intent == "AMBIGUOUS":
+        return {
+            "reply": "카드를 조회하시겠어요, 아니면 새로 발급하시겠어요?",
+            "navActions": [
+                {"path": "/mypage/cards", "label": "내 카드 보기"},
+                {"path": "/mypage/cards", "label": "카드 발급하러 가기"},
+            ],
+        }
+
+    # intent == "LIST"(기본값)
+    return {"reply": CARD_LIST_MESSAGE, "navActions": [{"path": "/mypage/cards", "label": "내 카드 보기"}]}
+
+
+async def handle_fraud_report(intent: str, user_id: int) -> dict:
+    """intent: 'NEW' | 'HISTORY' | 'AMBIGUOUS'"""
+    if intent == "NEW":
+        return {"reply": FRAUD_REPORT_NEW_MESSAGE, "navActions": [{"path": "/mypage/fraud-reports", "label": "신고하러 가기"}]}
+
+    if intent == "AMBIGUOUS":
+        return {
+            "reply": "새로 신고하시겠어요, 아니면 신고 내역을 보시겠어요?",
+            "navActions": [
+                {"path": "/mypage/fraud-reports", "label": "신고하러 가기"},
+                {"path": "/mypage/fraud-reports", "label": "신고 내역 보기"},
+            ],
+        }
+
+    # intent == "HISTORY"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{SPRING_BASE_URL}/api/fraud-reports/user/{user_id}")
+        reports = response.json()
+
+    count = len(reports) if reports else 0
+    message = "접수하신 이상거래 신고 내역이 없어요." if count == 0 else f"현재 접수하신 이상거래 신고가 {count}건 있어요."
+    return {"reply": message, "navActions": [{"path": "/mypage/fraud-reports", "label": "신고 내역 보기"}]}
+
+
+async def handle_lock_request(intent: str, user_id: int) -> dict:
+    """intent: 'NEW' | 'HISTORY' | 'AMBIGUOUS'"""
+    if intent == "NEW":
+        return {"reply": LOCK_REQUEST_NEW_MESSAGE, "navActions": [{"path": "/mypage/lock-requests", "label": "잠금 신청하러 가기"}]}
+
+    if intent == "AMBIGUOUS":
+        return {
+            "reply": "잠금을 새로 신청하시겠어요, 아니면 요청 내역을 보시겠어요?",
+            "navActions": [
+                {"path": "/mypage/lock-requests", "label": "잠금 신청하러 가기"},
+                {"path": "/mypage/lock-requests", "label": "잠금 요청 내역 보러 가기"},
+            ],
+        }
+
+    # intent == "HISTORY"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{SPRING_BASE_URL}/api/locks", params= {"userId": user_id})
+        requests = response.json()
+
+    count = len(requests) if requests else 0
+    message = "신청하신 잠금 요청 내역이 없어요." if count == 0 else f"현재 신청하신 잠금 요청이 {count}건 있어요."
+    return {"reply": message, "navActions": [{"path": "/mypage/lock-requests", "label": "잠금 요청 내역 보기"}]}
+
+
+async def handle_customer_center_page() -> dict:
+    return {"reply": CUSTOMER_CENTER_PAGE_MESSAGE, "navActions": [{"path": "/support", "label": "고객센터 보기"}]}
