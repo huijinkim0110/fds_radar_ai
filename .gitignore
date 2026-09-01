@@ -7,9 +7,6 @@ __pycache__/
 **/.venv/
 venv/
 **/venv/
-*.pkl
-**/*.pkl
-# 대용량 데이터/모델/로그 제외
+# 대용량 데이터/로그 제외
 data/
-models/
 logs.log
